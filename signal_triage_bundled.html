@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Triage — Heewon Kim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --accent: #2F6B4F;
+  --accent-dark: #244f3a;
+  --bg: #f7f6f3;
+  --ink: #1f1f1f;
+  --gray: #6b6b6b;
+  --line: #e7e5e0;
+  --critical: #b3462c;
+  --high: #b3762c;
+  --medium: #4a6fa5;
+  --low: #2F6B4F;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  padding: 28px 20px 60px;
+}
+.wrap { max-width: 900px; margin: 0 auto; }
+
+header { margin-bottom: 18px; }
+.portfolio-link {
+  display: inline-block; font-size: 11.5px; color: var(--accent); text-decoration: none;
+  margin-bottom: 10px; font-weight: 600; letter-spacing: .01em;
+}
+.portfolio-link:hover { text-decoration: underline; }
+h1 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 26px; font-weight: 700; margin: 0 0 6px; color: var(--ink);
+}
+.sub { color: var(--gray); font-size: 14px; margin: 0 0 4px; }
+.byline { color: #9a9a94; font-size: 12px; }
+
+.tabs {
+  display: flex; gap: 4px; margin: 18px 0 20px; border-bottom: 1px solid var(--line);
+}
+.tab-btn {
+  appearance: none; border: none; background: none; cursor: pointer;
+  font-size: 13.5px; font-weight: 600; color: var(--gray);
+  padding: 10px 16px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  font-family: inherit;
+}
+.tab-btn:hover { color: var(--ink); }
+.tab-btn.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+.card {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px 22px;
+}
+.card h2 {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 16px; font-weight: 700; margin: 0 0 14px; color: var(--accent-dark);
+}
+.card + .card { margin-top: 16px; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12.5px; color: #5a5a5a; margin-bottom: 4px; }
+input[type=text], input[type=password], textarea, select {
+  width: 100%; padding: 7px 9px; border: 1px solid #d8d5cf; border-radius: 6px;
+  font-size: 13.5px; background: #fdfdfc; font-family: inherit;
+}
+textarea { resize: vertical; min-height: 70px; }
+input:focus, textarea:focus, select:focus { outline: 2px solid #c9c2b3; outline-offset: 1px; }
+
+.btn {
+  appearance: none; border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  font-family: inherit; font-size: 12.5px; font-weight: 600; padding: 8px 14px;
+  border-radius: 7px; cursor: pointer; white-space: nowrap;
+}
+.btn:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.secondary { background: #fff; color: var(--accent-dark); }
+.btn.secondary:hover { background: #f1efe6; }
+.btn.danger { background: #fff; color: #b3462c; border-color: #e3c3b8; font-weight: 500; }
+.btn.danger:hover { background: #fbeeea; }
+.btn.small { font-size: 11.5px; padding: 6px 10px; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+/* Mode banner */
+.mode-banner {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #faf9f6; border: 1px solid #eeece6; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 16px; font-size: 12.5px; color: #55534c;
+}
+.mode-banner .mode-tag {
+  font-weight: 700; padding: 3px 9px; border-radius: 12px; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .03em;
+}
+.mode-tag.demo { background: #f1efe6; color: #8a6d1f; }
+.mode-tag.live { background: #eef6f0; color: var(--accent-dark); }
+.mode-banner .toggle-link { color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 600; }
+
+.settings-box {
+  background: #faf9f6; border: 1px dashed #d8d5cf; border-radius: 8px;
+  padding: 14px 16px; margin-bottom: 16px;
+}
+.settings-box .note {
+  font-size: 11.5px; color: #8a8a84; line-height: 1.5; margin-top: 8px;
+}
+.mode-radio-row { display: flex; gap: 16px; margin-bottom: 12px; }
+.mode-radio-row label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink); }
+
+/* Custom signal form */
+.custom-signal-form .field-row { display: flex; gap: 10px; }
+.custom-signal-form .field-row .field { flex: 1; }
+
+/* Signal / queue cards */
+.signal-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 18px; margin-bottom: 12px;
+}
+.signal-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.signal-meta { font-size: 11px; color: #9a9a94; text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; }
+.signal-title { font-size: 14.5px; font-weight: 650; color: var(--ink); margin: 0 0 4px; }
+.signal-body { font-size: 13px; color: #55534c; line-height: 1.5; margin: 0 0 10px; }
+
+.urgency-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 12px;
+  text-transform: uppercase; letter-spacing: .03em; white-space: nowrap;
+}
+.urgency-badge.critical { background: #fbeeea; color: var(--critical); }
+.urgency-badge.high { background: #fbf3e6; color: var(--high); }
+.urgency-badge.medium { background: #eaf0f8; color: var(--medium); }
+.urgency-badge.low { background: #eef6f0; color: var(--low); }
+
+.source-tag {
+  font-size: 10.5px; color: #9a9a94; font-style: italic;
+}
+
+.reasons-list { font-size: 12px; color: #6b6b6b; margin: 6px 0 10px; padding-left: 18px; }
+.reasons-list li { margin-bottom: 2px; }
+
+.recommendation-box {
+  background: #faf9f6; border: 1px solid #eeece6; border-radius: 8px;
+  padding: 10px 12px; margin-bottom: 10px;
+}
+.recommendation-box .action { font-size: 13px; font-weight: 650; color: var(--ink); }
+.recommendation-box .rationale { font-size: 12px; color: #6b6b6b; margin-top: 3px; }
+
+.edit-box { display: none; margin-top: 8px; }
+.edit-box.visible { display: block; }
+
+.decision-note { margin-top: 8px; }
+
+.empty-state { color: #9a9a94; font-size: 13px; padding: 24px 0; text-align: center; }
+
+/* Audit log */
+table.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.data-table th, table.data-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #eeece6; vertical-align: top; }
+table.data-table thead th { color: #8a8a84; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; }
+.decision-tag { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; }
+.decision-tag.approved { background: #eef6f0; color: var(--accent-dark); }
+.decision-tag.edited { background: #eaf0f8; color: var(--medium); }
+.decision-tag.dismissed { background: #f1efe6; color: #8a6d1f; }
+
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--accent-dark); color: #fff; font-size: 12.5px; padding: 9px 16px;
+  border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  z-index: 50;
+}
+.toast.show { opacity: 1; }
+
+footer { margin-top: 28px; font-size: 11.5px; color: #a3a19a; line-height: 1.6; }
+footer a { color: var(--accent); }
+
+/* v2 additions */
+.section-divider { border-top: 1px solid #eeece6; margin: 14px 0; }
+.settings-subhead {
+  font-family: 'Source Serif 4', Georgia, serif;
+  font-size: 14px; font-weight: 700; margin: 0 0 4px; color: var(--accent-dark);
+}
+#session-cost { font-size: 11.5px; color: #8a8a84; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (max-width: 640px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+.summary-stat { background: #faf9f6; border: 1px solid #eeece6; border-radius: 8px; padding: 12px 14px; }
+.summary-stat .label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em; color: #a39c8b; font-weight: 600; }
+.summary-stat .value { font-size: 18px; font-weight: 700; color: var(--ink); margin-top: 4px; }
+
+.chart-wrap { position: relative; height: 220px; margin-bottom: 16px; }
+
+.comparison-panel {
+  background: #faf9f6; border: 1px dashed #d8d5cf; border-radius: 8px;
+  padding: 12px 14px; margin-bottom: 10px; font-size: 12.5px;
+}
+.compare-heading { font-weight: 700; font-size: 12px; margin-bottom: 8px; color: var(--ink); }
+.agree-tag { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; margin-left: 6px; }
+.agree-tag.agree { background: #eef6f0; color: var(--accent-dark); }
+.agree-tag.disagree { background: #fbf3e6; color: var(--high); }
+.compare-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; color: #55534c; }
+.compare-label { font-weight: 650; min-width: 70px; color: var(--ink); }
+.compare-rationale { color: #6b6b6b; font-size: 12px; margin-bottom: 8px; }
+
+.prompt-details { margin: 8px 0 10px; }
+.prompt-details summary {
+  font-size: 11.5px; color: var(--accent); cursor: pointer; font-weight: 600;
+}
+.prompt-pre {
+  white-space: pre-wrap; word-break: break-word; font-size: 11.5px; color: #55534c;
+  background: #faf9f6; border: 1px solid #eeece6; border-radius: 8px; padding: 10px 12px;
+  margin-top: 8px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="portfolio-link" href="https://app.notion.com/p/39fc9e01eb308124b369df917f865fd0" target="_blank" rel="noopener">← Part of my Product Portfolio</a>
+    <h1>Signal Triage</h1>
+    <p class="sub">An AI-assisted operational triage queue: incoming signals get scored for urgency and given a recommended next action. Nothing executes automatically, a human always approves, edits, or dismisses first.</p>
+    <p class="byline">Built by Heewon Kim — Senior Product Manager, personal project</p>
+    <p class="kbd-hint">Keyboard shortcuts on the front card of the queue: <kbd>A</kbd> approve · <kbd>E</kbd> edit &amp; approve · <kbd>D</kbd> dismiss</p>
+  </header>
+
+  <div class="mode-banner">
+    <div>
+      <span class="mode-tag demo" id="mode-tag">Demo mode</span>
+      <span id="mode-description">Scoring and recommendations below are rule-based, not a live model.</span>
+      <span id="session-cost" style="display:none;"></span>
+    </div>
+    <span class="toggle-link" id="settings-toggle">Settings</span>
+  </div>
+
+  <div class="settings-box" id="settings-box" style="display:none;">
+    <div class="mode-radio-row">
+      <label><input type="radio" name="mode" value="demo" id="mode-demo" checked> Demo mode (rule-based, no API key needed)</label>
+      <label><input type="radio" name="mode" value="live" id="mode-live"> Live mode (real Claude API calls)</label>
+    </div>
+    <div class="field" id="api-key-field" style="display:none;">
+      <label for="api-key-input">Your Anthropic API key</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-...">
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="save-mode-settings" type="button">Apply</button>
+    </div>
+    <p class="note">Live mode calls Claude's API directly from your browser using your own key, via Anthropic's documented "bring your own key" support. Your key is stored only in this browser tab's session storage, it is cleared when you close the tab, and it is sent only to api.anthropic.com, never to any server of mine, because this tool has no backend server at all. Live calls use Claude Sonnet 5 at published rates (as of 2026-07-19: $2 / $10 per million input/output tokens); check <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank" rel="noopener">Anthropic's current pricing</a> since this changes over time.</p>
+
+    <div class="section-divider"></div>
+    <h3 class="settings-subhead">Demo-mode keywords</h3>
+    <p class="note" style="margin-top:0;">Optional: override the keyword lists the rule-based scorer uses. Comma-separated. Leave blank to use the built-in defaults.</p>
+    <div class="field">
+      <label for="custom-critical-keywords">Critical keywords</label>
+      <input type="text" id="custom-critical-keywords" placeholder="e.g. outage, down, unauthorized">
+    </div>
+    <div class="field">
+      <label for="custom-elevated-keywords">Elevated keywords</label>
+      <input type="text" id="custom-elevated-keywords" placeholder="e.g. spike, delayed, complaint">
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="save-keyword-settings" type="button">Apply</button>
+      <button class="btn secondary" id="reset-keyword-settings" type="button">Reset to Defaults</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="queue">Triage Queue</button>
+    <button class="tab-btn" data-tab="audit">Audit Log</button>
+  </nav>
+
+  <!-- ===================== QUEUE ===================== -->
+  <div id="tab-queue" class="tab-panel active">
+    <div class="card custom-signal-form">
+      <h2>Add Your Own Signal</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="custom-title">Title</label>
+          <input type="text" id="custom-title" placeholder="e.g. Checkout errors spiking">
+        </div>
+        <div class="field" style="max-width:200px;">
+          <label for="custom-category">Category</label>
+          <select id="custom-category">
+            <option value="system_alert">System Alert</option>
+            <option value="support_ticket">Support Ticket</option>
+            <option value="account_activity">Account Activity</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="custom-body">Details</label>
+        <textarea id="custom-body" placeholder="Paste in a real ticket, alert, or activity description to see how it gets triaged."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="add-custom-signal" type="button">Add &amp; Triage</button>
+      </div>
+    </div>
+
+    <div id="queue-list"></div>
+    <div class="empty-state" id="queue-empty" style="display:none;">Queue is empty. Everything has been reviewed, check the Audit Log.</div>
+  </div>
+
+  <!-- ===================== AUDIT LOG ===================== -->
+  <div id="tab-audit" class="tab-panel">
+    <div class="card">
+      <h2>Audit Log</h2>
+      <p class="sub" style="margin-bottom:14px;">Every decision made in the Triage Queue is recorded here: what was approved, edited, or dismissed, and by what standard. This is the record that makes "a human is always in the loop" checkable.</p>
+
+      <div class="stats-grid" id="audit-stats" style="display:none;">
+        <div class="summary-stat"><div class="label">Reviewed</div><div class="value" id="stat-total">0</div></div>
+        <div class="summary-stat"><div class="label">Approved</div><div class="value" id="stat-approved">0%</div></div>
+        <div class="summary-stat"><div class="label">Edited</div><div class="value" id="stat-edited">0%</div></div>
+        <div class="summary-stat"><div class="label">Dismissed</div><div class="value" id="stat-dismissed">0%</div></div>
+      </div>
+      <div class="chart-wrap" id="audit-chart-wrap" style="display:none;"><canvas id="audit-chart"></canvas></div>
+
+      <div class="calibration-box" id="calibration-box" style="display:none;">
+        <h3 class="settings-subhead">Demo vs Live Calibration</h3>
+        <p class="note" style="margin-top:0;">How often does the rule-based scorer agree with Claude, based on every "Compare with Claude" run in this browser. Not a rigorous benchmark, sample size is whatever you've generated here, not a curated eval set.</p>
+        <div class="stats-grid calibration-stats">
+          <div class="summary-stat"><div class="label">Comparisons</div><div class="value" id="cal-total">0</div></div>
+          <div class="summary-stat"><div class="label">Agree</div><div class="value" id="cal-agree">0%</div></div>
+          <div class="summary-stat"><div class="label">Claude rated higher</div><div class="value" id="cal-higher">0</div></div>
+          <div class="summary-stat"><div class="label">Claude rated lower</div><div class="value" id="cal-lower">0</div></div>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn secondary small" id="clear-calibration-log" type="button">Clear Comparison Log</button>
+        </div>
+      </div>
+
+      <div class="btn-row" id="audit-actions" style="display:none; margin-top:0; margin-bottom:14px;">
+        <button class="btn secondary small" id="export-audit-csv" type="button">Export CSV</button>
+        <button class="btn secondary small" id="clear-audit-log" type="button">Clear Log</button>
+      </div>
+      <div class="empty-state" id="audit-empty">No decisions recorded yet.</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="audit-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Level</th>
+              <th>Decision</th>
+              <th>Final Action</th>
+              <th>Note</th>
+              <th>Source</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Sample signals are fictional, for demo purposes only. Nothing in this tool takes real action on a real system, account, or ticket. It is a decision-support demo, every recommendation requires a human decision before anything would happen in a real deployment.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/**
+ * scoring.js
+ *
+ * Rule-based urgency scoring for demo mode. Explicitly NOT machine learning:
+ * a keyword-and-category heuristic, the kind a human triager would apply
+ * mentally, made explicit and consistent. Labeled as "rule-based" in the UI
+ * on purpose, the same discipline used in the Real Estate Deal Analyzer's
+ * Deal Insights panel. Live mode (js/claude.js) replaces this with a real
+ * model call when the visitor supplies their own API key.
+ *
+ * The keyword lists below are the defaults; a visitor can override them in
+ * Settings without touching code (js/settings.js stores the override,
+ * js/app.js passes it in here).
+ */
+const Scoring = (function () {
+  const DEFAULT_CRITICAL_KEYWORDS = ['outage', 'down', 'unauthorized', 'breach', 'data loss', 'failed payment', 'compromised'];
+  const DEFAULT_ELEVATED_KEYWORDS = ['spike', 'delayed', 'error rate', 'complaint', 'refund', 'dispute', 'unusual', 'elevated latency'];
+
+  function scoreSignal(signal, config) {
+    config = config || {};
+    const criticalKeywords = config.criticalKeywords && config.criticalKeywords.length ? config.criticalKeywords : DEFAULT_CRITICAL_KEYWORDS;
+    const elevatedKeywords = config.elevatedKeywords && config.elevatedKeywords.length ? config.elevatedKeywords : DEFAULT_ELEVATED_KEYWORDS;
+
+    const text = ((signal.title || '') + ' ' + (signal.body || '')).toLowerCase();
+    let score = 20;
+    const reasons = [];
+
+    const criticalHits = criticalKeywords.filter((k) => text.includes(k.toLowerCase()));
+    if (criticalHits.length) {
+      score += 40 + (criticalHits.length - 1) * 10;
+      reasons.push('Matched critical keyword(s): ' + criticalHits.join(', '));
+    }
+
+    const elevatedHits = elevatedKeywords.filter((k) => text.includes(k.toLowerCase()));
+    if (elevatedHits.length) {
+      score += 15 + (elevatedHits.length - 1) * 5;
+      reasons.push('Matched elevated keyword(s): ' + elevatedHits.join(', '));
+    }
+
+    if (signal.category === 'system_alert') {
+      score += 10;
+      reasons.push('System alerts are weighted higher by default');
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    let level;
+    if (score >= 75) level = 'critical';
+    else if (score >= 55) level = 'high';
+    else if (score >= 35) level = 'medium';
+    else level = 'low';
+
+    if (!reasons.length) reasons.push('No urgency keywords matched; baseline score applied');
+
+    return { score, level, reasons, source: 'rule-based' };
+  }
+
+  return { scoreSignal, DEFAULT_CRITICAL_KEYWORDS, DEFAULT_ELEVATED_KEYWORDS };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Scoring;
+}
+
+</script>
+<script>
+/**
+ * recommendations.js
+ *
+ * Templated recommended actions for demo mode, keyed by signal category and
+ * urgency level. Every template is written to require human review, never
+ * to imply the tool takes the action itself. Live mode (js/claude.js)
+ * replaces this with a real model-generated recommendation.
+ */
+const Recommendations = (function () {
+  const TEMPLATES = {
+    system_alert: {
+      critical: { action: 'Page the on-call engineer now', rationale: 'Critical infrastructure signals need a human response immediately; this tool does not page anyone automatically.' },
+      high: { action: 'Escalate to the infrastructure team within the hour', rationale: 'High-severity signal, but not yet confirmed as an outage.' },
+      medium: { action: 'Add to the engineering triage queue for this shift', rationale: 'Worth a look this shift, not an emergency yet.' },
+      low: { action: 'Log for trend monitoring, no immediate action needed', rationale: 'Within normal range or already resolved.' }
+    },
+    support_ticket: {
+      critical: { action: 'Route to a senior support lead for a same-day response', rationale: 'Signals possible account security or billing harm; needs a human decision, not an automatic refund or account action.' },
+      high: { action: 'Prioritize ahead of the standard queue', rationale: 'Customer impact looks real, but not urgent enough to interrupt someone.' },
+      medium: { action: 'Handle in normal queue order', rationale: 'Standard support request.' },
+      low: { action: 'Standard response time applies', rationale: 'No urgency signals present.' }
+    },
+    account_activity: {
+      critical: { action: 'Flag the account for manual security review before any restriction is applied', rationale: 'Possible account compromise; a human should verify before locking or restricting anything.' },
+      high: { action: 'Queue for account review within 24 hours', rationale: 'Unusual but not clearly malicious activity.' },
+      medium: { action: 'Note on the account for the next scheduled review', rationale: 'Minor deviation from normal usage.' },
+      low: { action: 'No action needed', rationale: 'Routine account activity.' }
+    }
+  };
+
+  function recommendAction(signal, scoring) {
+    const byCategory = TEMPLATES[signal.category] || TEMPLATES.support_ticket;
+    const rec = byCategory[scoring.level] || byCategory.low;
+    return { action: rec.action, rationale: rec.rationale, source: 'rule-based template' };
+  }
+
+  return { recommendAction, TEMPLATES };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Recommendations;
+}
+
+</script>
+<script>
+/**
+ * claude.js
+ *
+ * Live mode: calls the Claude API directly from the browser using a
+ * visitor-supplied API key, via Anthropic's documented
+ * "anthropic-dangerous-direct-browser-access" header (the supported pattern
+ * for bring-your-own-key client-side tools, no backend proxy required).
+ *
+ * The key never leaves this browser tab except in requests sent directly to
+ * api.anthropic.com. It is stored in sessionStorage (js/settings.js), not
+ * localStorage, so it clears when the tab closes rather than persisting.
+ *
+ * buildTriagePrompt(), parseTriageResponse(), and estimateCost() are pure
+ * and unit-tested. triageWithClaude() makes a real network call and is
+ * exercised manually in-browser, the same as the browser-only functions in
+ * js/share.js in the Real Estate Deal Analyzer.
+ */
+const ClaudeClient = (function () {
+  const API_URL = 'https://api.anthropic.com/v1/messages';
+  const MODEL = 'claude-sonnet-5';
+
+  // Published rates as of 2026-07-19, source: platform.claude.com/docs/en/about-claude/pricing.
+  // Claude Sonnet 5 introductory pricing runs through 2026-08-31; standard
+  // pricing ($3 / $15 per MTok) applies after that. Update PRICING_EFFECTIVE_UNTIL
+  // and the rates below if this drifts, rather than trust the estimate blindly.
+  const PRICING_EFFECTIVE_UNTIL = '2026-08-31';
+  const PRICE_PER_MTOK_INPUT = 2;
+  const PRICE_PER_MTOK_OUTPUT = 10;
+
+  function buildTriagePrompt(signal) {
+    const instructions = 'You are an operational triage assistant. Assess the urgency of the signal below and return ONLY a JSON object with these exact keys: "level" (one of "low", "medium", "high", "critical"), "reasons" (an array of short strings explaining the assessment), "recommendedAction" (a short, specific next step for a human to take), and "rationale" (one sentence explaining why, and note that a human must approve before the action happens, you must not imply the action happens automatically).';
+
+    const signalText = 'Signal source: ' + signal.category +
+      '\nTitle: ' + signal.title +
+      '\nBody: ' + signal.body +
+      '\n\nReturn only the JSON object, no other text, no markdown code fences.';
+
+    return [{ role: 'user', content: instructions + '\n\n' + signalText }];
+  }
+
+  function parseTriageResponse(text) {
+    const match = String(text || '').match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Could not find a JSON object in the model response.');
+    const parsed = JSON.parse(match[0]);
+    if (!parsed.level || !parsed.recommendedAction) {
+      throw new Error('Model response was missing required fields (level, recommendedAction).');
+    }
+    const validLevels = ['low', 'medium', 'high', 'critical'];
+    if (validLevels.indexOf(parsed.level) === -1) {
+      throw new Error('Model returned an unrecognized urgency level: ' + parsed.level);
+    }
+    return {
+      level: parsed.level,
+      reasons: Array.isArray(parsed.reasons) ? parsed.reasons : [],
+      action: parsed.recommendedAction,
+      rationale: parsed.rationale || '',
+      source: 'claude-live'
+    };
+  }
+
+  // Rough token-count approximation (~4 characters per token in English,
+  // per Anthropic's own guidance). Only good enough for a pre-call estimate,
+  // never used in place of the real usage numbers the API returns.
+  function approxTokenCount(text) {
+    return Math.ceil(String(text || '').length / 4);
+  }
+
+  // Estimated output length assumes a typical response to this specific
+  // prompt (a short JSON object), not a general-purpose estimate.
+  const TYPICAL_OUTPUT_TOKENS = 150;
+
+  function estimatePreCallCost(signal) {
+    const promptText = buildTriagePrompt(signal)[0].content;
+    const estimatedInputTokens = approxTokenCount(promptText);
+    const inputCost = estimatedInputTokens * (PRICE_PER_MTOK_INPUT / 1000000);
+    const outputCost = TYPICAL_OUTPUT_TOKENS * (PRICE_PER_MTOK_OUTPUT / 1000000);
+    return {
+      estimatedInputTokens,
+      estimatedOutputTokens: TYPICAL_OUTPUT_TOKENS,
+      estimatedCostUsd: inputCost + outputCost,
+      isEstimate: true
+    };
+  }
+
+  function estimateCost(usage) {
+    if (!usage) return null;
+    const inputCost = (usage.input_tokens || 0) * (PRICE_PER_MTOK_INPUT / 1000000);
+    const outputCost = (usage.output_tokens || 0) * (PRICE_PER_MTOK_OUTPUT / 1000000);
+    return {
+      inputTokens: usage.input_tokens || 0,
+      outputTokens: usage.output_tokens || 0,
+      totalCostUsd: inputCost + outputCost,
+      pricingEffectiveUntil: PRICING_EFFECTIVE_UNTIL
+    };
+  }
+
+  async function triageWithClaude(signal, apiKey) {
+    if (!apiKey) throw new Error('No API key provided.');
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 400,
+        messages: buildTriagePrompt(signal)
+      })
+    });
+
+    if (!res.ok) {
+      let detail = '';
+      try { detail = await res.text(); } catch (e) { /* ignore */ }
+      throw new Error('Claude API request failed (' + res.status + '): ' + detail);
+    }
+
+    const data = await res.json();
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
+    const parsed = parseTriageResponse(text);
+    parsed.usage = data.usage || null;
+    parsed.cost = estimateCost(data.usage);
+    return parsed;
+  }
+
+  return {
+    buildTriagePrompt, parseTriageResponse, triageWithClaude, estimateCost,
+    approxTokenCount, estimatePreCallCost,
+    MODEL, API_URL, PRICE_PER_MTOK_INPUT, PRICE_PER_MTOK_OUTPUT, PRICING_EFFECTIVE_UNTIL
+  };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ClaudeClient;
+}
+
+</script>
+<script>
+/**
+ * signals.js
+ *
+ * SAMPLE DATA ONLY. These are fictional operational signals (support tickets,
+ * system alerts, account activity) for demo purposes so the tool has
+ * something to triage out of the box. This is not connected to any real
+ * ticketing system, monitoring tool, or account database. Swapping this file
+ * for a real webhook/API feed is the only change needed to go live; see
+ * ROADMAP.md.
+ */
+const SAMPLE_SIGNALS = [
+  {
+    id: 'S1', category: 'system_alert', source: 'Monitoring',
+    title: 'Checkout service error rate spike',
+    body: 'Error rate on the checkout service jumped from 0.2% to 8.5% over the last 10 minutes. Correlates with a deploy at 14:02 UTC.',
+    timestamp: '2026-07-18T14:12:00Z'
+  },
+  {
+    id: 'S2', category: 'system_alert', source: 'Monitoring',
+    title: 'Nightly batch job completed on schedule',
+    body: 'The nightly reconciliation job completed in 42 minutes, within normal range.',
+    timestamp: '2026-07-18T03:00:00Z'
+  },
+  {
+    id: 'S3', category: 'system_alert', source: 'Monitoring',
+    title: 'Primary database region reporting elevated latency',
+    body: 'p99 query latency in us-east-1 is 4x baseline. No outage yet, but trending up over the last hour.',
+    timestamp: '2026-07-18T09:47:00Z'
+  },
+  {
+    id: 'S4', category: 'support_ticket', source: 'Support Queue',
+    title: 'Customer reports unauthorized charge on their account',
+    body: 'Customer says they see a charge they do not recognize and is asking whether their account was compromised.',
+    timestamp: '2026-07-17T22:15:00Z'
+  },
+  {
+    id: 'S5', category: 'support_ticket', source: 'Support Queue',
+    title: 'Question about export file format',
+    body: 'Customer is asking whether CSV exports can include a custom date format. Not blocking their work.',
+    timestamp: '2026-07-17T11:30:00Z'
+  },
+  {
+    id: 'S6', category: 'support_ticket', source: 'Support Queue',
+    title: 'Refund dispute after failed payment retry',
+    body: 'Customer was charged twice after a failed payment retry loop. They are requesting a refund and are frustrated.',
+    timestamp: '2026-07-18T08:05:00Z'
+  },
+  {
+    id: 'S7', category: 'account_activity', source: 'Account Monitoring',
+    title: 'Login from a new country followed by a password change',
+    body: 'Account logged in from a country with no prior login history, followed by a password reset 4 minutes later.',
+    timestamp: '2026-07-18T05:22:00Z'
+  },
+  {
+    id: 'S8', category: 'account_activity', source: 'Account Monitoring',
+    title: 'Unusual spike in API usage on a single account',
+    body: 'One account\'s API call volume is 15x its 30-day average over the past hour. No error spike associated with it.',
+    timestamp: '2026-07-18T13:40:00Z'
+  },
+  {
+    id: 'S9', category: 'account_activity', source: 'Account Monitoring',
+    title: 'User updated their billing email',
+    body: 'Routine profile update. No other unusual activity on the account.',
+    timestamp: '2026-07-17T16:00:00Z'
+  },
+  {
+    id: 'S10', category: 'system_alert', source: 'Monitoring',
+    title: 'Possible data loss: backup job failed twice in a row',
+    body: 'The automated backup job for the analytics warehouse has failed its last two scheduled runs. No successful backup in 26 hours.',
+    timestamp: '2026-07-18T14:30:00Z'
+  }
+];
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = SAMPLE_SIGNALS;
+}
+
+</script>
+<script>
+/**
+ * storage.js
+ *
+ * Audit log of every human decision made in the review queue: approve,
+ * edit-and-approve, or dismiss. Stored in localStorage only, per-browser,
+ * same zero-backend approach as the Real Estate Deal Analyzer. This is the
+ * record that makes "a human is always in the loop" checkable rather than
+ * just claimed.
+ */
+const AuditLog = (function () {
+  const KEY = 'signal-triage:audit-log:v1';
+
+  function getAll() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function record(entry) {
+    const all = getAll();
+    const logEntry = {
+      id: 'log_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+      signalId: entry.signalId,
+      signalTitle: entry.signalTitle,
+      category: entry.category || null,
+      level: entry.level || null,
+      decision: entry.decision,
+      finalAction: entry.finalAction || null,
+      note: entry.note || '',
+      source: entry.source || 'unknown',
+      decidedAt: new Date().toISOString()
+    };
+    all.unshift(logEntry);
+    localStorage.setItem(KEY, JSON.stringify(all));
+    return logEntry.id;
+  }
+
+  function clear() {
+    localStorage.removeItem(KEY);
+  }
+
+  return { getAll, record, clear };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = AuditLog;
+}
+
+</script>
+<script>
+/**
+ * settings.js
+ *
+ * Mode toggle (demo/live) and demo-mode keyword overrides, persisted in
+ * localStorage. The API key itself is deliberately kept out of localStorage
+ * and stored in sessionStorage instead, so it clears when the browser tab
+ * closes rather than persisting indefinitely on the visitor's machine.
+ */
+const Settings = (function () {
+  const KEY = 'signal-triage:settings:v1';
+  const API_KEY_SESSION_KEY = 'signal-triage:api-key:session';
+  const DEFAULTS = { mode: 'demo', criticalKeywords: null, elevatedKeywords: null };
+
+  function get() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(KEY));
+      return { ...DEFAULTS, ...(stored || {}) };
+    } catch (e) {
+      return { ...DEFAULTS };
+    }
+  }
+
+  function save(partial) {
+    const merged = { ...get(), ...partial };
+    localStorage.setItem(KEY, JSON.stringify(merged));
+    return merged;
+  }
+
+  function resetKeywords() {
+    return save({ criticalKeywords: null, elevatedKeywords: null });
+  }
+
+  function getApiKey() {
+    try {
+      return sessionStorage.getItem(API_KEY_SESSION_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function setApiKey(key) {
+    try {
+      if (key) sessionStorage.setItem(API_KEY_SESSION_KEY, key);
+      else sessionStorage.removeItem(API_KEY_SESSION_KEY);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  return { get, save, resetKeywords, getApiKey, setApiKey, DEFAULTS };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Settings;
+}
+
+</script>
+<script>
+/**
+ * stats.js
+ *
+ * Pure summary functions over the audit log: decision breakdown (approved /
+ * edited / dismissed) and urgency-level mix among reviewed signals. No DOM,
+ * no storage access, just aggregation, so it's independently testable.
+ */
+const Stats = (function () {
+  function summarize(entries) {
+    const total = entries.length;
+    const byDecision = { approved: 0, edited: 0, dismissed: 0 };
+    const byLevel = { low: 0, medium: 0, high: 0, critical: 0 };
+    const bySource = { 'rule-based': 0, 'claude-live': 0 };
+
+    entries.forEach((e) => {
+      if (Object.prototype.hasOwnProperty.call(byDecision, e.decision)) byDecision[e.decision]++;
+      if (e.level && Object.prototype.hasOwnProperty.call(byLevel, e.level)) byLevel[e.level]++;
+      if (e.source && Object.prototype.hasOwnProperty.call(bySource, e.source)) bySource[e.source]++;
+    });
+
+    function pct(n) {
+      return total > 0 ? Math.round((n / total) * 1000) / 10 : 0;
+    }
+
+    return {
+      total,
+      byDecision,
+      byLevel,
+      bySource,
+      approvedPct: pct(byDecision.approved),
+      editedPct: pct(byDecision.edited),
+      dismissedPct: pct(byDecision.dismissed)
+    };
+  }
+
+  return { summarize };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Stats;
+}
+
+</script>
+<script>
+/**
+ * export.js
+ * Exports the audit log to a CSV file the browser downloads directly, no
+ * backend involved. Same pattern as the Real Estate Deal Analyzer's
+ * portfolio CSV export.
+ */
+const ExportCsv = (function () {
+  function csvEscape(value) {
+    if (value === null || value === undefined) return '';
+    const s = String(value);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function toCsv(entries) {
+    const headers = ['Signal', 'Category', 'Level', 'Decision', 'Final Action', 'Note', 'Source', 'Decided At'];
+    const rows = entries.map((e) => [
+      csvEscape(e.signalTitle),
+      csvEscape(e.category),
+      csvEscape(e.level),
+      csvEscape(e.decision),
+      csvEscape(e.finalAction),
+      csvEscape(e.note),
+      csvEscape(e.source),
+      csvEscape(e.decidedAt)
+    ].join(','));
+    return headers.join(',') + '\n' + rows.join('\n');
+  }
+
+  function download(entries, filename) {
+    const csv = toCsv(entries);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'audit-log.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  return { toCsv, download, csvEscape };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ExportCsv;
+}
+
+</script>
+<script>
+/**
+ * queue.js
+ *
+ * Pure queue-ordering and time-formatting helpers. A tool called "Triage
+ * Queue" should actually order by triage priority, not insertion order,
+ * so this sorts most-urgent-first and breaks ties by how long a signal has
+ * been waiting. No DOM access, independently testable.
+ */
+const Queue = (function () {
+  const LEVEL_RANK = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  function sortByUrgency(items) {
+    return items.slice().sort((a, b) => {
+      const rankDiff = (LEVEL_RANK[b.scoring.level] || 0) - (LEVEL_RANK[a.scoring.level] || 0);
+      if (rankDiff !== 0) return rankDiff;
+      return new Date(a.signal.timestamp) - new Date(b.signal.timestamp);
+    });
+  }
+
+  function formatElapsed(fromIso, nowMs) {
+    const now = nowMs === undefined ? Date.now() : nowMs;
+    const from = new Date(fromIso).getTime();
+    if (Number.isNaN(from)) return '';
+    const diffMs = Math.max(0, now - from);
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return minutes + 'm';
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + 'h';
+    const days = Math.floor(hours / 24);
+    return days + 'd';
+  }
+
+  return { sortByUrgency, formatElapsed, LEVEL_RANK };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Queue;
+}
+
+</script>
+<script>
+/**
+ * comparisons.js
+ *
+ * Every time a visitor runs "Compare with Claude" on a signal, the result
+ * is logged here, independent of whatever the visitor ultimately decided
+ * to do with it. This is what makes an aggregate "how often does the rule-
+ * based heuristic agree with Claude" report possible, instead of just
+ * anecdotal impressions from a handful of cards.
+ *
+ * Explicitly not a rigorous benchmark: sample size is whatever a visitor
+ * happens to generate in their own browser, not a curated eval set. The UI
+ * says so.
+ */
+const ComparisonLog = (function () {
+  const KEY = 'signal-triage:comparisons:v1';
+  const LEVEL_RANK = { critical: 4, high: 3, medium: 2, low: 1 };
+
+  function getAll() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function record(entry) {
+    const all = getAll();
+    const ruleRank = LEVEL_RANK[entry.ruleLevel] || 0;
+    const liveRank = LEVEL_RANK[entry.liveLevel] || 0;
+    let direction;
+    if (liveRank === ruleRank) direction = 'agree';
+    else if (liveRank > ruleRank) direction = 'live-higher';
+    else direction = 'live-lower';
+
+    const logEntry = {
+      id: 'cmp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7),
+      signalId: entry.signalId,
+      signalTitle: entry.signalTitle,
+      ruleLevel: entry.ruleLevel,
+      liveLevel: entry.liveLevel,
+      direction,
+      comparedAt: new Date().toISOString()
+    };
+    all.unshift(logEntry);
+    localStorage.setItem(KEY, JSON.stringify(all));
+    return logEntry.id;
+  }
+
+  function summarize(entries) {
+    const list = entries || getAll();
+    const total = list.length;
+    const agreeCount = list.filter((e) => e.direction === 'agree').length;
+    const liveHigherCount = list.filter((e) => e.direction === 'live-higher').length;
+    const liveLowerCount = list.filter((e) => e.direction === 'live-lower').length;
+    return {
+      total,
+      agreeCount,
+      agreePct: total > 0 ? Math.round((agreeCount / total) * 1000) / 10 : 0,
+      liveHigherCount,
+      liveLowerCount
+    };
+  }
+
+  function clear() {
+    localStorage.removeItem(KEY);
+  }
+
+  return { getAll, record, summarize, clear, LEVEL_RANK };
+})();
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = ComparisonLog;
+}
+
+</script>
+<script>
+/**
+ * app.js — DOM wiring for Signal Triage.
+ * Depends on Scoring, Recommendations, ClaudeClient, SAMPLE_SIGNALS,
+ * AuditLog, Settings, Stats, ExportCsv, Queue, ComparisonLog, and (for the
+ * audit chart) the global Chart constructor from Chart.js, all loaded as
+ * globals before this file.
+ */
+(function () {
+  'use strict';
+
+  let queue = [];
+  let customCounter = 0;
+  let sessionCalls = 0;
+  let sessionInputTokens = 0;
+  let sessionOutputTokens = 0;
+  let sessionCostUsd = 0;
+  let auditChart = null;
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer = setTimeout(() => t.classList.remove('show'), 2600);
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str == null ? '' : String(str);
+    return d.innerHTML;
+  }
+
+  function keywordConfig() {
+    const settings = Settings.get();
+    return {
+      criticalKeywords: settings.criticalKeywords || undefined,
+      elevatedKeywords: settings.elevatedKeywords || undefined
+    };
+  }
+
+  function triageDemo(signal) {
+    const scoring = Scoring.scoreSignal(signal, keywordConfig());
+    const recommendation = Recommendations.recommendAction(signal, scoring);
+    return { signal, scoring, recommendation, liveComparison: null };
+  }
+
+  async function callClaude(signal) {
+    const apiKey = Settings.getApiKey();
+    const result = await ClaudeClient.triageWithClaude(signal, apiKey);
+    trackUsage(result);
+    return result;
+  }
+
+  function trackUsage(result) {
+    if (!result.usage) return;
+    sessionCalls += 1;
+    sessionInputTokens += result.usage.input_tokens || 0;
+    sessionOutputTokens += result.usage.output_tokens || 0;
+    if (result.cost) sessionCostUsd += result.cost.totalCostUsd;
+    renderSessionCost();
+  }
+
+  function renderSessionCost() {
+    const el = document.getElementById('session-cost');
+    if (sessionCalls === 0) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = 'inline';
+    el.textContent = ' · Session: ' + sessionCalls + ' live call' + (sessionCalls === 1 ? '' : 's') +
+      ', ' + (sessionInputTokens + sessionOutputTokens).toLocaleString() + ' tokens, ~$' + sessionCostUsd.toFixed(4);
+  }
+
+  function isLiveModeReady() {
+    return Settings.get().mode === 'live' && !!Settings.getApiKey();
+  }
+
+  function formatTimestamp(iso) {
+    try {
+      return new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function categoryLabel(category) {
+    const labels = { system_alert: 'System Alert', support_ticket: 'Support Ticket', account_activity: 'Account Activity' };
+    return labels[category] || category;
+  }
+
+  function sourceLabel(source) {
+    return source === 'claude-live' ? 'Live: Claude' : 'Rule-based';
+  }
+
+  // ---------- Queue rendering ----------
+
+  function renderQueue() {
+    const list = document.getElementById('queue-list');
+    const empty = document.getElementById('queue-empty');
+    list.innerHTML = '';
+
+    if (!queue.length) {
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const sorted = Queue.sortByUrgency(queue);
+    sorted.forEach((item, index) => {
+      list.appendChild(buildSignalCard(item, index === 0));
+    });
+  }
+
+  function buildSignalCard(item, isFront) {
+    const { signal, scoring, recommendation, liveComparison } = item;
+    const card = document.createElement('div');
+    card.className = 'signal-card' + (isFront ? ' is-front' : '');
+    card.dataset.id = signal.id;
+    if (isFront) card.dataset.front = 'true';
+
+    const canCompare = isLiveModeReady() && scoring.source !== 'claude-live' && !liveComparison;
+    const promptText = ClaudeClient.buildTriagePrompt(signal)[0].content;
+    const elapsed = Queue.formatElapsed(signal.timestamp);
+    const preCallEstimate = canCompare ? ClaudeClient.estimatePreCallCost(signal) : null;
+
+    card.innerHTML = `
+      <div class="signal-card-top">
+        <div>
+          <div class="signal-meta">${escapeHtml(categoryLabel(signal.category))} · ${escapeHtml(formatTimestamp(signal.timestamp))} <span class="elapsed-tag">· waiting ${escapeHtml(elapsed)}</span>${isFront ? ' <span class="front-tag">next up</span>' : ''}</div>
+          <div class="signal-title">${escapeHtml(signal.title)}</div>
+        </div>
+        <span class="urgency-badge ${scoring.level}">${scoring.level} (${scoring.score !== undefined ? scoring.score : '—'})</span>
+      </div>
+      <p class="signal-body">${escapeHtml(signal.body)}</p>
+      <ul class="reasons-list">${(scoring.reasons || []).map((r) => `<li>${escapeHtml(r)}</li>`).join('')}</ul>
+      <div class="recommendation-box">
+        <div class="action">${escapeHtml(recommendation.action)}</div>
+        <div class="rationale">${escapeHtml(recommendation.rationale)}</div>
+      </div>
+      <div class="source-tag">Assessed by: ${escapeHtml(sourceLabel(scoring.source))}</div>
+
+      <div class="comparison-panel" data-role="comparison-panel" style="${liveComparison ? '' : 'display:none;'}"></div>
+
+      <details class="prompt-details">
+        <summary>View the exact prompt Claude would receive</summary>
+        <pre class="prompt-pre">${escapeHtml(promptText)}</pre>
+      </details>
+
+      <div class="btn-row">
+        <button class="btn approve-btn" type="button">Approve</button>
+        <button class="btn secondary edit-btn" type="button">Edit &amp; Approve</button>
+        <button class="btn danger dismiss-btn" type="button">Dismiss</button>
+        ${canCompare ? '<button class="btn secondary compare-btn" type="button">Compare with Claude</button>' : ''}
+      </div>
+      ${preCallEstimate ? `<div class="precall-estimate">Est. cost to compare: ~$${preCallEstimate.estimatedCostUsd.toFixed(4)} (${preCallEstimate.estimatedInputTokens} input tokens + ~${preCallEstimate.estimatedOutputTokens} output tokens, before the call is made)</div>` : ''}
+      <div class="edit-box" data-role="edit-box">
+        <div class="field">
+          <label>Edit the recommended action before approving</label>
+          <input type="text" class="edit-action-input" value="${escapeHtml(recommendation.action)}">
+        </div>
+        <div class="btn-row">
+          <button class="btn small confirm-edit-btn" type="button">Confirm &amp; Approve</button>
+          <button class="btn secondary small cancel-edit-btn" type="button">Cancel</button>
+        </div>
+      </div>
+      <div class="edit-box" data-role="dismiss-box">
+        <div class="field decision-note">
+          <label>Reason for dismissing (optional)</label>
+          <input type="text" class="dismiss-note-input" placeholder="e.g. false positive, already handled">
+        </div>
+        <div class="btn-row">
+          <button class="btn danger small confirm-dismiss-btn" type="button">Confirm Dismiss</button>
+          <button class="btn secondary small cancel-dismiss-btn" type="button">Cancel</button>
+        </div>
+      </div>
+    `;
+
+    if (liveComparison) renderComparisonPanel(card, item);
+    wireCard(card, item);
+    return card;
+  }
+
+  function renderComparisonPanel(card, item) {
+    const panel = card.querySelector('[data-role="comparison-panel"]');
+    const { scoring, liveComparison } = item;
+    const agree = scoring.level === liveComparison.scoring.level;
+    panel.style.display = 'block';
+    panel.innerHTML = `
+      <div class="compare-heading">Rule-based vs Claude ${agree ? '<span class="agree-tag agree">agree</span>' : '<span class="agree-tag disagree">disagree</span>'}</div>
+      <div class="compare-row"><span class="compare-label">Rule-based:</span> <span class="urgency-badge ${scoring.level}">${scoring.level}</span> ${escapeHtml(item.recommendation.action)}</div>
+      <div class="compare-row"><span class="compare-label">Claude:</span> <span class="urgency-badge ${liveComparison.scoring.level}">${liveComparison.scoring.level}</span> ${escapeHtml(liveComparison.recommendation.action)}</div>
+      <div class="compare-rationale">${escapeHtml(liveComparison.recommendation.rationale)}</div>
+      <div class="btn-row">
+        <button class="btn small use-claude-btn" type="button">Use Claude's assessment</button>
+      </div>
+    `;
+    panel.querySelector('.use-claude-btn').addEventListener('click', () => {
+      item.scoring = liveComparison.scoring;
+      item.recommendation = liveComparison.recommendation;
+      item.liveComparison = null;
+      renderQueue();
+      showToast('Switched to Claude’s assessment');
+    });
+  }
+
+  function removeFromQueue(signalId) {
+    queue = queue.filter((q) => q.signal.id !== signalId);
+  }
+
+  function wireCard(card, item) {
+    const { signal } = item;
+    const editBox = card.querySelector('[data-role="edit-box"]');
+    const dismissBox = card.querySelector('[data-role="dismiss-box"]');
+
+    function currentAssessment() {
+      return { scoring: item.scoring, recommendation: item.recommendation };
+    }
+
+    card.querySelector('.approve-btn').addEventListener('click', () => {
+      const { scoring, recommendation } = currentAssessment();
+      AuditLog.record({
+        signalId: signal.id, signalTitle: signal.title, category: signal.category, level: scoring.level,
+        decision: 'approved', finalAction: recommendation.action, source: scoring.source
+      });
+      removeFromQueue(signal.id);
+      renderQueue();
+      renderAuditLog();
+      showToast('Approved: ' + recommendation.action);
+    });
+
+    card.querySelector('.edit-btn').addEventListener('click', () => {
+      dismissBox.classList.remove('visible');
+      editBox.classList.toggle('visible');
+    });
+
+    card.querySelector('.cancel-edit-btn').addEventListener('click', () => {
+      editBox.classList.remove('visible');
+    });
+
+    card.querySelector('.confirm-edit-btn').addEventListener('click', () => {
+      const { scoring, recommendation } = currentAssessment();
+      const editedAction = card.querySelector('.edit-action-input').value.trim() || recommendation.action;
+      AuditLog.record({
+        signalId: signal.id, signalTitle: signal.title, category: signal.category, level: scoring.level,
+        decision: 'edited', finalAction: editedAction, source: scoring.source
+      });
+      removeFromQueue(signal.id);
+      renderQueue();
+      renderAuditLog();
+      showToast('Approved with edits');
+    });
+
+    card.querySelector('.dismiss-btn').addEventListener('click', () => {
+      editBox.classList.remove('visible');
+      dismissBox.classList.toggle('visible');
+    });
+
+    card.querySelector('.cancel-dismiss-btn').addEventListener('click', () => {
+      dismissBox.classList.remove('visible');
+    });
+
+    card.querySelector('.confirm-dismiss-btn').addEventListener('click', () => {
+      const { scoring } = currentAssessment();
+      const note = card.querySelector('.dismiss-note-input').value.trim();
+      AuditLog.record({
+        signalId: signal.id, signalTitle: signal.title, category: signal.category, level: scoring.level,
+        decision: 'dismissed', note, source: scoring.source
+      });
+      removeFromQueue(signal.id);
+      renderQueue();
+      renderAuditLog();
+      showToast('Dismissed');
+    });
+
+    const compareBtn = card.querySelector('.compare-btn');
+    if (compareBtn) {
+      compareBtn.addEventListener('click', async () => {
+        compareBtn.disabled = true;
+        compareBtn.textContent = 'Comparing…';
+        try {
+          const result = await callClaude(signal);
+          item.liveComparison = {
+            scoring: { level: result.level, reasons: result.reasons, source: 'claude-live' },
+            recommendation: { action: result.action, rationale: result.rationale, source: 'claude-live' }
+          };
+          ComparisonLog.record({
+            signalId: signal.id, signalTitle: signal.title,
+            ruleLevel: item.scoring.level, liveLevel: result.level
+          });
+          renderQueue();
+          showToast('Compared with Claude');
+        } catch (err) {
+          compareBtn.disabled = false;
+          compareBtn.textContent = 'Compare with Claude';
+          showToast('Live comparison failed: ' + err.message);
+        }
+      });
+    }
+  }
+
+  // ---------- Audit log rendering ----------
+
+  function renderAuditLog() {
+    const entries = AuditLog.getAll();
+    const empty = document.getElementById('audit-empty');
+    const table = document.getElementById('audit-table');
+    const actions = document.getElementById('audit-actions');
+    const statsGrid = document.getElementById('audit-stats');
+    const chartWrap = document.getElementById('audit-chart-wrap');
+    const tbody = document.getElementById('audit-tbody');
+
+    renderCalibrationBox();
+
+    if (!entries.length) {
+      empty.style.display = 'block';
+      table.style.display = 'none';
+      actions.style.display = 'none';
+      statsGrid.style.display = 'none';
+      chartWrap.style.display = 'none';
+      return;
+    }
+    empty.style.display = 'none';
+    table.style.display = 'table';
+    actions.style.display = 'flex';
+    statsGrid.style.display = 'grid';
+    chartWrap.style.display = 'block';
+
+    const stats = Stats.summarize(entries);
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-approved').textContent = stats.approvedPct + '%';
+    document.getElementById('stat-edited').textContent = stats.editedPct + '%';
+    document.getElementById('stat-dismissed').textContent = stats.dismissedPct + '%';
+    renderAuditChart(stats);
+
+    tbody.innerHTML = entries.map((e) => `
+      <tr>
+        <td>${escapeHtml(e.signalTitle)}</td>
+        <td>${e.level ? `<span class="urgency-badge ${e.level}">${escapeHtml(e.level)}</span>` : '—'}</td>
+        <td><span class="decision-tag ${e.decision}">${escapeHtml(e.decision)}</span></td>
+        <td>${escapeHtml(e.finalAction || '—')}</td>
+        <td>${escapeHtml(e.note || '—')}</td>
+        <td>${escapeHtml(sourceLabel(e.source))}</td>
+        <td>${escapeHtml(formatTimestamp(e.decidedAt))}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderCalibrationBox() {
+    const box = document.getElementById('calibration-box');
+    const comparisons = ComparisonLog.getAll();
+    if (!comparisons.length) {
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+    const summary = ComparisonLog.summarize(comparisons);
+    document.getElementById('cal-total').textContent = summary.total;
+    document.getElementById('cal-agree').textContent = summary.agreePct + '%';
+    document.getElementById('cal-higher').textContent = summary.liveHigherCount;
+    document.getElementById('cal-lower').textContent = summary.liveLowerCount;
+  }
+
+  function renderAuditChart(stats) {
+    if (typeof Chart === 'undefined') return;
+    const canvas = document.getElementById('audit-chart');
+    const ctx = canvas.getContext('2d');
+    if (auditChart) auditChart.destroy();
+    auditChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['Low', 'Medium', 'High', 'Critical'],
+        datasets: [{
+          label: 'Signals reviewed',
+          data: [stats.byLevel.low, stats.byLevel.medium, stats.byLevel.high, stats.byLevel.critical],
+          backgroundColor: ['#2F6B4F', '#4a6fa5', '#b3762c', '#b3462c']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  // ---------- Tabs ----------
+
+  function initTabs() {
+    document.querySelectorAll('.tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+  }
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tabId));
+    document.querySelectorAll('.tab-panel').forEach((p) => p.classList.toggle('active', p.id === 'tab-' + tabId));
+    if (tabId === 'audit') renderAuditLog();
+  }
+
+  // ---------- Settings ----------
+
+  function refreshModeBanner() {
+    const settings = Settings.get();
+    const tag = document.getElementById('mode-tag');
+    const desc = document.getElementById('mode-description');
+    if (settings.mode === 'live' && Settings.getApiKey()) {
+      tag.textContent = 'Live mode';
+      tag.className = 'mode-tag live';
+      desc.textContent = 'New signals can be scored by a real Claude API call; pending ones can be compared against it.';
+    } else {
+      tag.textContent = 'Demo mode';
+      tag.className = 'mode-tag demo';
+      desc.textContent = 'Scoring and recommendations below are rule-based, not a live model.';
+    }
+    renderSessionCost();
+  }
+
+  function initSettings() {
+    const toggle = document.getElementById('settings-toggle');
+    const box = document.getElementById('settings-box');
+    const modeDemo = document.getElementById('mode-demo');
+    const modeLive = document.getElementById('mode-live');
+    const apiKeyField = document.getElementById('api-key-field');
+    const apiKeyInput = document.getElementById('api-key-input');
+
+    const settings = Settings.get();
+    if (settings.mode === 'live') {
+      modeLive.checked = true;
+      apiKeyField.style.display = 'block';
+    }
+    apiKeyInput.value = Settings.getApiKey();
+    document.getElementById('custom-critical-keywords').value = (settings.criticalKeywords || []).join(', ');
+    document.getElementById('custom-elevated-keywords').value = (settings.elevatedKeywords || []).join(', ');
+
+    toggle.addEventListener('click', () => {
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    });
+
+    [modeDemo, modeLive].forEach((radio) => {
+      radio.addEventListener('change', () => {
+        apiKeyField.style.display = modeLive.checked ? 'block' : 'none';
+      });
+    });
+
+    document.getElementById('save-mode-settings').addEventListener('click', () => {
+      const mode = modeLive.checked ? 'live' : 'demo';
+      Settings.save({ mode });
+      Settings.setApiKey(apiKeyInput.value.trim());
+      refreshModeBanner();
+      renderQueue();
+      showToast(mode === 'live' ? 'Live mode enabled' : 'Switched to demo mode');
+    });
+
+    document.getElementById('save-keyword-settings').addEventListener('click', () => {
+      const critical = document.getElementById('custom-critical-keywords').value
+        .split(',').map((s) => s.trim()).filter(Boolean);
+      const elevated = document.getElementById('custom-elevated-keywords').value
+        .split(',').map((s) => s.trim()).filter(Boolean);
+      Settings.save({
+        criticalKeywords: critical.length ? critical : null,
+        elevatedKeywords: elevated.length ? elevated : null
+      });
+      requeueDemoOnly();
+      showToast('Keyword settings applied');
+    });
+
+    document.getElementById('reset-keyword-settings').addEventListener('click', () => {
+      Settings.resetKeywords();
+      document.getElementById('custom-critical-keywords').value = '';
+      document.getElementById('custom-elevated-keywords').value = '';
+      requeueDemoOnly();
+      showToast('Reset to default keywords');
+    });
+  }
+
+  // Re-scores any still-pending, not-yet-live-assessed items with the current
+  // keyword settings, without touching items already assessed live.
+  function requeueDemoOnly() {
+    queue = queue.map((item) => {
+      if (item.scoring.source === 'claude-live') return item;
+      return triageDemo(item.signal);
+    });
+    renderQueue();
+  }
+
+  // ---------- Custom signal form ----------
+
+  function initCustomSignalForm() {
+    const addBtn = document.getElementById('add-custom-signal');
+    addBtn.addEventListener('click', async () => {
+      const title = document.getElementById('custom-title').value.trim();
+      const category = document.getElementById('custom-category').value;
+      const body = document.getElementById('custom-body').value.trim();
+
+      if (!title || !body) {
+        showToast('Add a title and some details first');
+        return;
+      }
+
+      customCounter += 1;
+      const signal = {
+        id: 'custom_' + Date.now().toString(36) + '_' + customCounter,
+        category, title, body, timestamp: new Date().toISOString()
+      };
+
+      addBtn.disabled = true;
+      const originalText = addBtn.textContent;
+      addBtn.textContent = isLiveModeReady() ? 'Triaging with Claude…' : 'Adding…';
+
+      try {
+        let item;
+        if (isLiveModeReady()) {
+          const result = await callClaude(signal);
+          item = {
+            signal,
+            scoring: { level: result.level, reasons: result.reasons, source: 'claude-live' },
+            recommendation: { action: result.action, rationale: result.rationale, source: 'claude-live' },
+            liveComparison: null
+          };
+        } else {
+          item = triageDemo(signal);
+        }
+        queue.unshift(item);
+        renderQueue();
+        document.getElementById('custom-title').value = '';
+        document.getElementById('custom-body').value = '';
+        showToast('Signal added to the queue');
+      } catch (err) {
+        showToast('Could not triage that signal: ' + err.message);
+      } finally {
+        addBtn.disabled = false;
+        addBtn.textContent = originalText;
+      }
+    });
+  }
+
+  // ---------- Init ----------
+
+  function init() {
+    queue = SAMPLE_SIGNALS.map(triageDemo);
+    initTabs();
+    initSettings();
+    initCustomSignalForm();
+    refreshModeBanner();
+    renderQueue();
+    renderAuditLog();
+
+    document.getElementById('clear-audit-log').addEventListener('click', () => {
+      AuditLog.clear();
+      renderAuditLog();
+      showToast('Audit log cleared');
+    });
+
+    document.getElementById('export-audit-csv').addEventListener('click', () => {
+      const entries = AuditLog.getAll();
+      if (!entries.length) { showToast('No decisions to export yet'); return; }
+      ExportCsv.download(entries, 'signal-triage-audit-log.csv');
+      showToast('Audit log exported as CSV');
+    });
+
+    document.getElementById('clear-calibration-log').addEventListener('click', () => {
+      ComparisonLog.clear();
+      renderCalibrationBox();
+      showToast('Comparison log cleared');
+    });
+
+    initKeyboardShortcuts();
+  }
+
+  // ---------- Keyboard shortcuts ----------
+  // A / E / D act on the front-of-queue card (the topmost, most urgent
+  // signal) when the Triage Queue tab is active. Ignored while a text
+  // field, textarea, or select has focus so typing "a dog" into the
+  // custom signal form doesn't accidentally approve something.
+  function initKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (document.activeElement && document.activeElement.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const queueTab = document.getElementById('tab-queue');
+      if (!queueTab || !queueTab.classList.contains('active')) return;
+
+      const frontCard = document.querySelector('.signal-card[data-front="true"]');
+      if (!frontCard) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 'a') {
+        e.preventDefault();
+        frontCard.querySelector('.approve-btn').click();
+      } else if (key === 'e') {
+        e.preventDefault();
+        frontCard.querySelector('.edit-btn').click();
+        const input = frontCard.querySelector('.edit-action-input');
+        if (input) input.focus();
+      } else if (key === 'd') {
+        e.preventDefault();
+        frontCard.querySelector('.dismiss-btn').click();
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+</script>
+</body>
+</html>

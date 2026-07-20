@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Triage — Heewon Kim</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=3">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="portfolio-link" href="https://app.notion.com/p/39fc9e01eb308124b369df917f865fd0" target="_blank" rel="noopener">← Part of my Product Portfolio</a>
+    <h1>Signal Triage</h1>
+    <p class="sub">An AI-assisted operational triage queue: incoming signals get scored for urgency and given a recommended next action. Nothing executes automatically, a human always approves, edits, or dismisses first.</p>
+    <p class="byline">Built by Heewon Kim — Senior Product Manager, personal project</p>
+    <p class="kbd-hint">Keyboard shortcuts on the front card of the queue: <kbd>A</kbd> approve · <kbd>E</kbd> edit &amp; approve · <kbd>D</kbd> dismiss</p>
+  </header>
+
+  <div class="mode-banner">
+    <div>
+      <span class="mode-tag demo" id="mode-tag">Demo mode</span>
+      <span id="mode-description">Scoring and recommendations below are rule-based, not a live model.</span>
+      <span id="session-cost" style="display:none;"></span>
+    </div>
+    <span class="toggle-link" id="settings-toggle">Settings</span>
+  </div>
+
+  <div class="settings-box" id="settings-box" style="display:none;">
+    <div class="mode-radio-row">
+      <label><input type="radio" name="mode" value="demo" id="mode-demo" checked> Demo mode (rule-based, no API key needed)</label>
+      <label><input type="radio" name="mode" value="live" id="mode-live"> Live mode (real Claude API calls)</label>
+    </div>
+    <div class="field" id="api-key-field" style="display:none;">
+      <label for="api-key-input">Your Anthropic API key</label>
+      <input type="password" id="api-key-input" placeholder="sk-ant-...">
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="save-mode-settings" type="button">Apply</button>
+    </div>
+    <p class="note">Live mode calls Claude's API directly from your browser using your own key, via Anthropic's documented "bring your own key" support. Your key is stored only in this browser tab's session storage, it is cleared when you close the tab, and it is sent only to api.anthropic.com, never to any server of mine, because this tool has no backend server at all. Live calls use Claude Sonnet 5 at published rates (as of 2026-07-19: $2 / $10 per million input/output tokens); check <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank" rel="noopener">Anthropic's current pricing</a> since this changes over time.</p>
+
+    <div class="section-divider"></div>
+    <h3 class="settings-subhead">Demo-mode keywords</h3>
+    <p class="note" style="margin-top:0;">Optional: override the keyword lists the rule-based scorer uses. Comma-separated. Leave blank to use the built-in defaults.</p>
+    <div class="field">
+      <label for="custom-critical-keywords">Critical keywords</label>
+      <input type="text" id="custom-critical-keywords" placeholder="e.g. outage, down, unauthorized">
+    </div>
+    <div class="field">
+      <label for="custom-elevated-keywords">Elevated keywords</label>
+      <input type="text" id="custom-elevated-keywords" placeholder="e.g. spike, delayed, complaint">
+    </div>
+    <div class="btn-row">
+      <button class="btn secondary" id="save-keyword-settings" type="button">Apply</button>
+      <button class="btn secondary" id="reset-keyword-settings" type="button">Reset to Defaults</button>
+    </div>
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="queue">Triage Queue</button>
+    <button class="tab-btn" data-tab="audit">Audit Log</button>
+  </nav>
+
+  <!-- ===================== QUEUE ===================== -->
+  <div id="tab-queue" class="tab-panel active">
+    <div class="card custom-signal-form">
+      <h2>Add Your Own Signal</h2>
+      <div class="field-row">
+        <div class="field">
+          <label for="custom-title">Title</label>
+          <input type="text" id="custom-title" placeholder="e.g. Checkout errors spiking">
+        </div>
+        <div class="field" style="max-width:200px;">
+          <label for="custom-category">Category</label>
+          <select id="custom-category">
+            <option value="system_alert">System Alert</option>
+            <option value="support_ticket">Support Ticket</option>
+            <option value="account_activity">Account Activity</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="custom-body">Details</label>
+        <textarea id="custom-body" placeholder="Paste in a real ticket, alert, or activity description to see how it gets triaged."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="add-custom-signal" type="button">Add &amp; Triage</button>
+      </div>
+    </div>
+
+    <div id="queue-list"></div>
+    <div class="empty-state" id="queue-empty" style="display:none;">Queue is empty. Everything has been reviewed, check the Audit Log.</div>
+  </div>
+
+  <!-- ===================== AUDIT LOG ===================== -->
+  <div id="tab-audit" class="tab-panel">
+    <div class="card">
+      <h2>Audit Log</h2>
+      <p class="sub" style="margin-bottom:14px;">Every decision made in the Triage Queue is recorded here: what was approved, edited, or dismissed, and by what standard. This is the record that makes "a human is always in the loop" checkable.</p>
+
+      <div class="stats-grid" id="audit-stats" style="display:none;">
+        <div class="summary-stat"><div class="label">Reviewed</div><div class="value" id="stat-total">0</div></div>
+        <div class="summary-stat"><div class="label">Approved</div><div class="value" id="stat-approved">0%</div></div>
+        <div class="summary-stat"><div class="label">Edited</div><div class="value" id="stat-edited">0%</div></div>
+        <div class="summary-stat"><div class="label">Dismissed</div><div class="value" id="stat-dismissed">0%</div></div>
+      </div>
+      <div class="chart-wrap" id="audit-chart-wrap" style="display:none;"><canvas id="audit-chart"></canvas></div>
+
+      <div class="calibration-box" id="calibration-box" style="display:none;">
+        <h3 class="settings-subhead">Demo vs Live Calibration</h3>
+        <p class="note" style="margin-top:0;">How often does the rule-based scorer agree with Claude, based on every "Compare with Claude" run in this browser. Not a rigorous benchmark, sample size is whatever you've generated here, not a curated eval set.</p>
+        <div class="stats-grid calibration-stats">
+          <div class="summary-stat"><div class="label">Comparisons</div><div class="value" id="cal-total">0</div></div>
+          <div class="summary-stat"><div class="label">Agree</div><div class="value" id="cal-agree">0%</div></div>
+          <div class="summary-stat"><div class="label">Claude rated higher</div><div class="value" id="cal-higher">0</div></div>
+          <div class="summary-stat"><div class="label">Claude rated lower</div><div class="value" id="cal-lower">0</div></div>
+        </div>
+        <div class="btn-row" style="margin-top:8px;">
+          <button class="btn secondary small" id="clear-calibration-log" type="button">Clear Comparison Log</button>
+        </div>
+      </div>
+
+      <div class="btn-row" id="audit-actions" style="display:none; margin-top:0; margin-bottom:14px;">
+        <button class="btn secondary small" id="export-audit-csv" type="button">Export CSV</button>
+        <button class="btn secondary small" id="clear-audit-log" type="button">Clear Log</button>
+      </div>
+      <div class="empty-state" id="audit-empty">No decisions recorded yet.</div>
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="audit-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Level</th>
+              <th>Decision</th>
+              <th>Final Action</th>
+              <th>Note</th>
+              <th>Source</th>
+              <th>When</th>
+            </tr>
+          </thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Sample signals are fictional, for demo purposes only. Nothing in this tool takes real action on a real system, account, or ticket. It is a decision-support demo, every recommendation requires a human decision before anything would happen in a real deployment.
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/scoring.js?v=3"></script>
+<script src="js/recommendations.js?v=3"></script>
+<script src="js/claude.js?v=3"></script>
+<script src="js/signals.js?v=3"></script>
+<script src="js/storage.js?v=3"></script>
+<script src="js/settings.js?v=3"></script>
+<script src="js/stats.js?v=3"></script>
+<script src="js/export.js?v=3"></script>
+<script src="js/queue.js?v=3"></script>
+<script src="js/comparisons.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
+</body>
+</html>
